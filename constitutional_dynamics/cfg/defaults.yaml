@@ -1,0 +1,29 @@
+# PrincipiaDynamica - Constitutional Dynamics: Default Configuration
+
+# Memory and decay parameters
+memory:
+  decay_rate: 0.2  # τ (tau) - memory decay rate
+  window_size: 10  # Number of states to consider for history
+
+# Alignment thresholds
+alignment:
+  similarity_threshold: 0.7  # Threshold for considering a state aligned
+  critical_alignment_penalty: 0.0  # Penalty for critical alignment violations
+  optional_alignment_penalty: 2.0  # Penalty for optional alignment violations
+
+# Optimizer settings
+optimizer:
+  lambda_weight: 0.35  # λ (lambda) - weight for spectral vs time domain cost
+  flow_constraint_strength: 5.0  # Strength of flow constraints in QUBO
+  quantum_num_reads: 1000  # Number of reads for quantum annealer
+
+# Visualization
+visualization:
+  sparkline_width: 60  # Width of sparkline visualization
+  use_rich: true       # Whether to use Rich for enhanced console output
+
+# Live collection (if using features that monitor live processes/data)
+live:
+  interval: 1.0  # Seconds between samples for live data collection
+  gauss_sigma: 2.0  # Smoothing factor (Gaussian) for live data processing
+  max_queue: 512   # Maximum queue size for samples in live mode

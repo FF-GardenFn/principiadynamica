@@ -1,0 +1,53 @@
+version: 1
+disable_existing_loggers: false
+
+formatters:
+  standard:
+    format: '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+  rich:
+    format: '%(message)s'
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: standard
+    stream: ext://sys.stdout
+
+  file:
+    class: logging.FileHandler
+    level: DEBUG
+    formatter: standard
+    filename: constitutional_dynamics.log
+    encoding: utf8
+    mode: a
+
+  rich_console:
+    class: rich.logging.RichHandler
+    level: INFO
+    rich_tracebacks: true
+    show_time: true
+    show_path: false
+
+loggers:
+  constitutional_dynamics:
+    level: INFO
+    handlers: [rich_console, file]
+    propagate: false
+
+  constitutional_dynamics.core:
+    level: INFO
+    propagate: true
+
+  constitutional_dynamics.io:
+    level: INFO
+    propagate: true
+
+  constitutional_dynamics.integrations:
+    level: INFO
+    propagate: true
+
+root:
+  level: WARNING
+  handlers: [console]
