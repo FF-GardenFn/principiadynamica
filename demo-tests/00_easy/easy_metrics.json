@@ -1,0 +1,32 @@
+{
+  "passed": 5,
+  "total": 5,
+  "runtime": 0.12,
+  "key_metrics": {
+    "drift_detection": {
+      "detected": true,
+      "threshold": 0.9,
+      "min_similarity": 0.707
+    },
+    "trajectory_forecast": {
+      "steps_predicted": 3,
+      "final_prediction": 0.146
+    },
+    "stability": {
+      "avg_alignment": 0.862,
+      "trend": -0.500,
+      "volatility": 0.125,
+      "lyapunov": 0.118,
+      "score": 0.625
+    },
+    "optimization": {
+      "solver": "greedy_fallback",
+      "energy": 0.0
+    },
+    "workflow": {
+      "initial_alignment": 1.0,
+      "final_alignment": 0.5,
+      "alerts_triggered": 1
+    }
+  }
+}
