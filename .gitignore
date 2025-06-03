@@ -128,3 +128,5 @@ constitutional_dynamics.log
 # Per-user packaging credentials
 .pypirc
 
+# Ignore the entire notebook workspace
+notebook/

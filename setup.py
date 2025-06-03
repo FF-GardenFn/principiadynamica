@@ -26,7 +26,7 @@ setup(
     author="FF-GardenFn",
     author_email="faycal.farhat@mail.mcgill.ca",
     url="https://github.com/FF-GardenFn/principiadynamica",
-    packages=find_packages(exclude=["legacy", "legacy.*", "*.tests", "*.tests.*", "tests.*", "tests"]),
+    packages=find_packages(exclude=["legacy", "legacy.*", "*.demo-tests", "*.demo-tests.*", "demo-tests.*", "demo-tests"]),
     include_package_data=True,
     package_data={
         "constitutional_dynamics.cfg": ["*.yaml"],

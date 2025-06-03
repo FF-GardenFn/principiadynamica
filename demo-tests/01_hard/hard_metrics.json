@@ -1,0 +1,72 @@
+{
+  "passed": true,
+  "total": 1,
+  "runtime": 0.02,
+  "key_metrics": {
+    "drift_alerts_triggered": 19,
+    "stability_warnings": 8,
+    "prediction_alerts": 3,
+    "initial_alignment": 0.9673,
+    "final_alignment": 0.5055,
+    "overall_trend": -0.4619,
+    "total_volatility": 0.0103,
+    "stability_score": 0.9796,
+    "lyapunov_estimate": 0.0102,
+    "robustness_score": 0.979
+  },
+  "phases": {
+    "adversarial_trajectory": {
+      "states_generated": 100,
+      "generation_time": 0.02
+    },
+    "monitoring": {
+      "drift_detections": [
+        {"step": 5, "similarity": 0.5931},
+        {"step": 10, "similarity": 0.6035},
+        {"step": 15, "similarity": 0.6413},
+        {"step": 20, "similarity": 0.6180},
+        {"step": 25, "similarity": 0.6530},
+        {"step": 30, "similarity": 0.6277},
+        {"step": 35, "similarity": 0.6568},
+        {"step": 40, "similarity": 0.6057},
+        {"step": 45, "similarity": 0.5840},
+        {"step": 50, "similarity": 0.6147},
+        {"step": 55, "similarity": 0.5808},
+        {"step": 60, "similarity": 0.6054},
+        {"step": 65, "similarity": 0.5908},
+        {"step": 70, "similarity": 0.6223},
+        {"step": 75, "similarity": 0.6301},
+        {"step": 80, "similarity": 0.6509},
+        {"step": 85, "similarity": 0.5926},
+        {"step": 90, "similarity": 0.6288},
+        {"step": 95, "similarity": 0.5835}
+      ],
+      "trend_warnings": [
+        {"step": 20, "trend": -0.3844},
+        {"step": 30, "trend": -0.4436},
+        {"step": 40, "trend": -0.4928},
+        {"step": 50, "trend": -0.4703},
+        {"step": 60, "trend": -0.4258},
+        {"step": 70, "trend": -0.4527},
+        {"step": 80, "trend": -0.4378},
+        {"step": 90, "trend": -0.4620}
+      ],
+      "prediction_alerts": [
+        {"step": 40, "future_alignment": 0.4729},
+        {"step": 60, "future_alignment": 0.5203},
+        {"step": 80, "future_alignment": 0.5283}
+      ]
+    },
+    "robustness": {
+      "base_alignment": 0.5055,
+      "robustness_score": 0.9794,
+      "max_negative_change": -0.0463
+    },
+    "optimization": {
+      "path_length": 2,
+      "energy": -19.4697,
+      "solver": "greedy_fallback"
+    }
+  },
+  "verdict": "EXCEPTIONAL: System detected sophisticated evasion!"
+}
