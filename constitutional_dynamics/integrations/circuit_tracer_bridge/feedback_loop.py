@@ -21,6 +21,9 @@ import torch
 from constitutional_dynamics.core.metrics import calculate_stability_metrics, evaluate_alignment_robustness
 from constitutional_dynamics.core.transition import predict_trajectory, compute_residual_potentiality, compute_activation_probability
 
+# Import strategist for higher-level strategy recommendations
+from constitutional_dynamics.integrations.strategist import create_strategist, MetaStrategist
+
 logger = logging.getLogger("constitutional_dynamics.integrations.circuit_tracer_bridge")
 
 
@@ -46,7 +49,9 @@ class AlignmentThermostat:
             model_interface: Any,
             threshold: float = 0.7,
             stability_weight: float = 0.3,
-            auto_stabilize: bool = True
+            auto_stabilize: bool = True,
+            enable_strategist: bool = True,
+            strategist_instance: Optional[MetaStrategist] = None
     ):
         """
         Initialize the AlignmentThermostat with necessary components.
@@ -59,6 +64,8 @@ class AlignmentThermostat:
             threshold: Alignment score threshold below which interventions are triggered
             stability_weight: Weight given to stability metrics in activation probability
             auto_stabilize: Whether to automatically stabilize the system based on drift detection
+            enable_strategist: Whether to enable the MetaStrategist integration
+            strategist_instance: Optional pre-configured MetaStrategist instance
         """
         self.monitor = cd_monitor_instance
         self.tracer = circuit_tracer_instance
@@ -66,11 +73,13 @@ class AlignmentThermostat:
         self.threshold = threshold
         self.stability_weight = stability_weight
         self.auto_stabilize = auto_stabilize
+        self.enable_strategist = enable_strategist
+        self.strategist = strategist_instance
         self.intervention_history = []
         self.stability_history = []
         self.lyapunov_estimate = 0.0
-        logger.info("AlignmentThermostat initialized with threshold %.2f, stability_weight %.2f, auto_stabilize=%s", 
-                   threshold, stability_weight, auto_stabilize)
+        logger.info("AlignmentThermostat initialized with threshold %.2f, stability_weight %.2f, auto_stabilize=%s, enable_strategist=%s", 
+                   threshold, stability_weight, auto_stabilize, enable_strategist)
 
     def identify_intervention_targets(self, circuit_analysis_result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
@@ -593,8 +602,46 @@ class AlignmentThermostat:
             lyapunov_estimate, new_lyapunov_estimate, stability_improved
         )
 
-        # Return comprehensive results including stability metrics
-        return {
+        # Check if we should consult the MetaStrategist
+        strategy_recommendation = None
+        # Get strategist_context from intervention_targets if available
+        strategist_context = intervention_targets.get("strategist_context", {})
+
+        if self.enable_strategist and strategist_context:
+            logger.info("Intervention applied, preparing to consult MetaStrategist.")
+
+            # Create strategist if not exists
+            if not self.strategist:
+                logger.info("Creating MetaStrategist instance.")
+                self.strategist = create_strategist()
+
+            # Generate strategy recommendation
+            try:
+                strategy_recommendation = self.strategist.generate_strategy(
+                    context=strategist_context,
+                    metrics={
+                        "alignment_score": verification_result["new_score"],
+                        "improvement_margin": verification_result["improvement_margin"],
+                        "lyapunov_estimate": new_lyapunov_estimate,
+                        "stability_improved": stability_improved
+                    },
+                    constraints={"max_complexity": "medium"}
+                )
+
+                logger.info(f"MetaStrategist recommendation: {strategy_recommendation.title}")
+
+                # Check if the strategy includes monitoring parameter adjustments
+                if hasattr(self.monitor, 'update_monitoring_focus') and strategy_recommendation.metadata.get("adjust_monitoring_parameters"):
+                    logger.info("Applying monitoring parameter adjustments from strategy.")
+                    self.monitor.update_monitoring_focus(
+                        strategy_recommendation.metadata["adjust_monitoring_parameters"]
+                    )
+            except Exception as e:
+                logger.warning(f"Error consulting MetaStrategist: {e}")
+                strategy_recommendation = None
+
+        # Return comprehensive results including stability metrics and strategy recommendation
+        result = {
             "intervention_applied": True,
             "improved": verification_result["improved"],
             "previous_score": verification_result["previous_score"],
@@ -613,3 +660,15 @@ class AlignmentThermostat:
             "intervention_reason": intervention_reason,
             "modulated_activation": True
         }
+
+        # Add strategy recommendation if available
+        if strategy_recommendation:
+            result["strategy_recommendation"] = {
+                "title": strategy_recommendation.title,
+                "description": strategy_recommendation.description,
+                "steps": strategy_recommendation.steps,
+                "confidence": strategy_recommendation.confidence,
+                "tags": strategy_recommendation.tags
+            }
+
+        return result
