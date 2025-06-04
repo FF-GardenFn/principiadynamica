@@ -1,15 +1,21 @@
 """
-Constitutional Dynamics 0.1 - Vector-space alignment metrics & state-transition calculus
+Constitutional Dynamics 0.2 - Vector-space alignment metrics & state-transition calculus
 
 A framework for analyzing and monitoring alignment as a trajectory through
 embedding space rather than a static property.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # Import from core module
 from .core.space import AlignmentVectorSpace
-from .core.transition import analyze_transition, predict_trajectory
+from .core.transition import (
+    analyze_transition, 
+    predict_trajectory, 
+    compute_activation_probability, 
+    compute_residual_potentiality,
+    compute_activation
+)
 from .core.metrics import calculate_stability_metrics, evaluate_alignment_robustness
 from .core.optimise import AlignmentOptimizer, GraphEnhancedAlignmentOptimizer
 
@@ -25,10 +31,7 @@ from .vis.visualizer import create_visualizer, TrajectoryVisualizer
 from .integrations.graph import create_graph_manager, GraphManager
 from .integrations.quantum import create_annealer, QuantumAnnealer
 from .integrations.strategist import create_strategist, MetaStrategist
-
-# Import from cli module
-# CLI main function is not imported here as it's only intended to be run via
-# python -m constitutional_dynamics.cli.main or the constitutional-dynamics console script
+from .integrations.circuit_tracer_bridge import AlignmentThermostat
 
 # Import from cfg module
 from .cfg import (
@@ -50,6 +53,9 @@ __all__ = [
     "AlignmentVectorSpace",
     "analyze_transition",
     "predict_trajectory",
+    "compute_activation_probability",
+    "compute_residual_potentiality",
+    "compute_activation",
     "calculate_stability_metrics",
     "evaluate_alignment_robustness",
     "AlignmentOptimizer",
@@ -73,8 +79,7 @@ __all__ = [
     "QuantumAnnealer",
     "create_strategist",
     "MetaStrategist",
-
-    # CLI entry point is not exposed in the public API
+    "AlignmentThermostat",
 
     # Configuration
     "load_config",

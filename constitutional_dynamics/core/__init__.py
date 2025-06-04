@@ -7,7 +7,13 @@ calculation, and optimization.
 """
 
 from .space import AlignmentVectorSpace
-from .transition import analyze_transition, predict_trajectory
+from .transition import (
+    analyze_transition, 
+    predict_trajectory, 
+    compute_activation_probability, 
+    compute_residual_potentiality,
+    compute_activation
+)
 from .metrics import (
     calculate_stability_metrics,
     evaluate_alignment_robustness
@@ -20,6 +26,9 @@ __all__ = [
     "AlignmentVectorSpace",
     "analyze_transition",
     "predict_trajectory",
+    "compute_activation_probability",
+    "compute_residual_potentiality",
+    "compute_activation",
     "calculate_stability_metrics",
     "evaluate_alignment_robustness",
     "AlignmentOptimizer",

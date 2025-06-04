@@ -51,7 +51,9 @@ class AlignmentThermostat:
             stability_weight: float = 0.3,
             auto_stabilize: bool = True,
             enable_strategist: bool = True,
-            strategist_instance: Optional[MetaStrategist] = None
+            strategist_instance: Optional[MetaStrategist] = None,
+            attribute_func: Optional[Any] = None,
+            prune_graph_func: Optional[Any] = None
     ):
         """
         Initialize the AlignmentThermostat with necessary components.
@@ -66,6 +68,8 @@ class AlignmentThermostat:
             auto_stabilize: Whether to automatically stabilize the system based on drift detection
             enable_strategist: Whether to enable the MetaStrategist integration
             strategist_instance: Optional pre-configured MetaStrategist instance
+            attribute_func: Optional function to use for circuit attribution (for testing/mocking)
+            prune_graph_func: Optional function to use for graph pruning (for testing/mocking)
         """
         self.monitor = cd_monitor_instance
         self.tracer = circuit_tracer_instance
@@ -75,6 +79,8 @@ class AlignmentThermostat:
         self.auto_stabilize = auto_stabilize
         self.enable_strategist = enable_strategist
         self.strategist = strategist_instance
+        self.attribute_func = attribute_func
+        self.prune_graph_func = prune_graph_func
         self.intervention_history = []
         self.stability_history = []
         self.lyapunov_estimate = 0.0
@@ -418,15 +424,25 @@ class AlignmentThermostat:
             intervention_reason
         )
 
-        # Call the actual Circuit Tracer to analyze the model's output
+        # Call the Circuit Tracer to analyze the model's output
         try:
-            from circuit_tracer.attribution import attribute
-            from circuit_tracer.graph import prune_graph
+            # Use provided functions if available, otherwise import them
+            attribute_func = self.attribute_func
+            prune_graph_func = self.prune_graph_func
+
+            if attribute_func is None or prune_graph_func is None:
+                # Only import if functions weren't provided
+                from circuit_tracer.attribution import attribute as default_attribute
+                from circuit_tracer.graph import prune_graph as default_prune_graph
+
+                # Use the imported functions if custom ones weren't provided
+                attribute_func = attribute_func or default_attribute
+                prune_graph_func = prune_graph_func or default_prune_graph
 
             logger.info("Starting Circuit Tracer analysis")
 
             # Assuming self.tracer is a ReplacementModel instance
-            graph = attribute(
+            graph = attribute_func(
                 prompt=original_prompt_for_trace,
                 model=self.tracer,
                 verbose=True,
@@ -440,7 +456,7 @@ class AlignmentThermostat:
 
             # Prune the graph to identify the most critical features
             logger.info("Pruning graph to identify critical features")
-            prune_result = prune_graph(graph, node_threshold=0.8, edge_threshold=0.98)
+            prune_result = prune_graph_func(graph, node_threshold=0.8, edge_threshold=0.98)
 
             # Get the most influential features
             # Extract feature indices from selected_features that have high influence

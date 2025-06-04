@@ -1,109 +1,68 @@
-<!-- README.md – constitutional-dynamics 0.1 -->
-
-<h1 align="center">Constitutional Dynamics 🧭</h1>
+<h1 align="center">PrincipiaDynamica 🧭</h1>
 <p align="center">
-  <em>Vector-space alignment metrics &amp; state-transition calculus for language-model telemetry</em><br>
-  <img alt="Status" src="https://img.shields.io/badge/status-prototype-orange">
+  <em>A research project developing State Transition Calculus (STC) for dynamic AI alignment, featuring the <code>constitutional-dynamics</code> Python package.</em>
+  <br>
+  <a href="https://pypi.org/project/constitutional-dynamics/"><img alt="PyPI - Version" src="https://img.shields.io/pypi/v/constitutional-dynamics"></a>
+  <img alt="Status" src="https://img.shields.io/badge/status-alpha_prototype-orange">
   <img alt="PyPI - Python Version" src="https://img.shields.io/pypi/pyversions/constitutional-dynamics">
-  <img alt="PyPI - License" src="https://img.shields.io/pypi/l/constitutional-dynamics">
-</p>
+  <a href="https://github.com/FF-GardenFn/principiadynamica/blob/main/LICENSE"><img alt="PyPI - License" src="https://img.shields.io/pypi/l/constitutional-dynamics"></a>
+  </p>
 
 ---
 
-## ✨ Why does this exist?
+**PrincipiaDynamica** is a research initiative focused on understanding and ensuring the safety and alignment of advanced AI systems through novel theoretical frameworks and practical tools. At its core is the development of **State Transition Calculus (STC)**, a mathematical formalism for modeling how complex systems, like Large Language Models (LLMs), evolve through different behavioral states over time.
 
-Large-model "alignment" is usually reported as a static score *after* fine-tuning.  
-**Constitutional Dynamics** treats alignment as a **trajectory** your model walks through embedding-space:
+The flagship application of this research is **`constitutional-dynamics`**, a Python package (available on PyPI) designed to:
+* Treat AI alignment not as a static score, but as a **dynamic trajectory** through a vector space representing behavior.
+* Monitor LLM telemetry in real-time or from logs to detect alignment drift, subtle behavioral shifts, and latent potentialities.
+* Leverage STC principles to quantify alignment, stability, and robustness.
+* Provide a framework for analyzing and potentially intervening in these trajectories, including via optimization techniques like QUBO.
 
-* **Time domain** – how successive responses drift toward / away from desired values.  
-* **Frequency domain** – whether telemetry or exfil channels reveal periodic "spikes" defenders can spot.  
-* **State-Transition Calculus (STC)** – a lightweight formalism that captures latent *potentialities* (good **and** bad) and how they re-activate under specific context.
-
-The result is a self-contained Python package you can drop on any JSON embedding dump or live psutil feed, and instantly obtain:
-
-* ϕ-alignment scores, robust to noise & perturbations  
-* Δ-transition vectors with direction-to-aligned-region heuristics  
-* PSD (spectral) deviation for stealth / anomaly studies  
-* A dual-objective cost `C(t)` ready to feed into quantum / classical optimizers
-
-> **TL;DR**  
-> Constitutional Dynamics isn't "yet another" static alignment benchmark.
-> It treats alignment as a living trajectory—monitored in real time, quantified in both time- and frequency-domains, and optimized via QUBO solvers. If we want to improve alignment, we must measure its dynamics, not just its snapshots. Constitutional Dynamics delivers that, coupling production-grade engineering (pydantic configs, CLI, tests, CI) with research-grade rigor.
-> — built for practitioners who treat alignment as an empirical science. At least that is what we are aiming for (ツ)
-> (For Anthropic— with appreciation.) 🫡
+> **TL;DR**
+> `constitutional-dynamics` isn't "yet another" static alignment benchmark. It's an STC-powered toolkit from the PrincipiaDynamica project that treats alignment as a living trajectory—monitored in real time, quantified in both time- and frequency-domains, and (experimentally) optimizable. It aims to provide deeper insights into AI behavior, complementing existing alignment methodologies.
 
 ---
 
-## 🗄️ Package layout
-```
-principiadynamica/                  <-- Repository Root (contains pyproject.toml, README.md)
-│
-├── constitutional_dynamics/        <-- Main Python package
-│   ├── __init__.py                 # version + public re-exports
-│   │
-│   ├── cfg/                        # YAML & logging config
-│   │   ├── defaults.yaml           # τ (memory), λ, thresholds…
-│   │   └── logging.yaml            # Logging configuration
-│   │
-│   ├── core/                       # Core functionality
-│   │   ├── space.py                # AlignmentVectorSpace
-│   │   ├── transition.py           # analyse_transition() + STC wrappers
-│   │   ├── metrics.py              # stability, robustness, PSD distance
-│   │   └── optimise.py             # Graph- & QUBO-based multi-objective solver
-│   │
-│   ├── io/                         # Input/Output operations
-│   │   ├── loaders.py              # load_embeddings() / aligned_examples()
-│   │   ├── timeseries.py           # detect & order time-series
-│   │   └── live.py                 # psutil collector
-│   │
-│   ├── integrations/               # External system integrations
-│   │   ├── graph.py                # Neo4j consequence-graph connector
-│   │   ├── quantum.py              # D-Wave / dwave-ocean wrapper
-│   │   └── strategist.py           # (optional) LLM prompt builder
-│   │
-│   ├── vis/                        # Visualization tools
-│   │   └── visualizer.py           # Rich / ASCII sparklines & tables
-│   │
-│   └── cli/                        # Command-line interface
-│       └── main.py                 # python -m constitutional_dynamics ...
-│
-├── tests/                          # Tests for the package & integrations
-│   └── ...
-│
-├── docs/                           # Project documentation
-│   └── ...
-│
-└── ... (LICENSE, .gitignore, etc.)
-```
+## ✨ Core Concepts & Features
+
+The `constitutional-dynamics` package, driven by State Transition Calculus, offers:
+
+* **Dynamic Alignment Tracking:**
+    * **ϕ-alignment scores:** Cosine similarity to defined "aligned regions" in embedding space, with exponential memory decay ($\tau$) making scores robust to momentary noise.
+    * **Δ-transition vectors:** Analyzing the direction and magnitude of change between behavioral states.
+* **State-Transition Calculus (STC) Primitives:**
+    * Models latent **residual potentialities** ($b(a_{res})$) – hidden capacities for behavior that can actualize under specific contexts.
+    * Implements (simplified) STC **activation functions** ($\phi(a_i, t, \dots)$) representing the influence of state components over time.
+* **Advanced Behavioral Analysis:**
+    * **Stability Metrics:** Including volatility, trend analysis, and an experimental Lyapunov exponent estimate to quantify trajectory stability.
+    * **Robustness Evaluation:** Assessing alignment resilience against simulated perturbations.
+    * **Power Spectral Density (PSD) Deviation:** Frequency-domain analysis to detect anomalous periodic patterns in behavior.
+* **Trajectory Optimization (Experimental):**
+    * A dual-objective cost function $C(t)=\bigl[1-\bar{\phi}(t)\bigr]\;+\;\lambda(t)\,\text{PSD\_distance}(S_x,S_{\text{aligned}})$ to balance immediate alignment with behavioral consistency.
+    * QUBO formulation for finding optimal behavioral paths, with integrations for classical and (via `dwave-ocean-sdk`) quantum-inspired solvers.
+* **Live Telemetry Monitoring:** Ingests real-time data (e.g., from `psutil` for system metrics as a proxy for model load/behavior) to track alignment dynamically.
+* **Integrations:**
+    * **Graph Databases (Neo4j):** For logging and querying state transitions and alignment history.
+    * **LLM Strategist (Experimental):** An LLM-powered component to generate strategic recommendations for realignment.
 
 ---
 
-## 🧠  Mathematical backbone
+## 🧠 The Alignment Thermostat: Integrating with Mechanistic Interpretability (Experimental)
 
-### 1.  Alignment region  *(time domain)*  
-*Vector-space hypersphere or convex-hull defined by known "good-behaviour" embeddings.*
+A key research direction within PrincipiaDynamica is the **Circuit Tracer Bridge**, an experimental integration designed to connect `constitutional-dynamics` with mechanistic interpretability tools like Anthropic's Circuit Tracer.
 
-* **ϕ(state)** — cosine similarity to aligned centroid/boundary (with exponential memory decay τ).
+The vision is an **"Alignment Thermostat"** that:
+1.  **Monitors** behavior externally using `constitutional-dynamics` (the "radar").
+2.  **Triggers** deep mechanistic analysis via Circuit Tracer (the "microscope") when anomalies are detected.
+3.  Uses circuit-level insights to inform and apply **targeted interventions**.
+4.  Incorporates a **stability-modulated activation** (STC v0.2 concept), where the system's Lyapunov exponent estimate directly influences the activation probability ($\phi$) of STC state subsets, allowing for adaptive self-stabilization.
 
-### 2.  State-Transition Calculus (STC)  
-| STC symbol | Implementation                                  |
-|------------|-------------------------------------------------|
-| `a_i` (value subset)        | cluster centres / prototype vectors |
-| `φ(a_i,t, …)`               | `metrics.activation()` (`ϕ · e^{-Δt/τ}`) |
-| Residual potentiality `b(a_res)` | robustness perturbation samples |
-| `λ(t)` exploration/exploitation knob | CLI flag → cost weight |
-
-### 3.  Dual-objective cost  
-
-\[
-C(t)=\bigl[1-\bar ϕ(t)\bigr]\;+\;\lambda(t)\,\text{PSD\_distance}(S_x,S_{\text{aligned}})
-\]
-
-*Minimized by `core/optimise.py` with a graph-enhanced QUBO (quantum or classical).*
+This aims to create a closed-loop system for more robust and proactive alignment.
+➡️ **Learn more:** [Circuit Tracer Bridge Conceptual Overview](constitutional_dynamics/integrations/circuit_tracer_bridge/README.md)
 
 ---
 
-## 🚀  Quick-start
+## 🚀 Quick Start
 
 ### Installation
 
@@ -112,69 +71,75 @@ From PyPI:
 pip install constitutional-dynamics
 ```
 
-Available on PyPI: [constitutional-dynamics 0.1.0](https://pypi.org/project/constitutional-dynamics/0.1.0/)
+Available on PyPI: constitutional-dynamics v0.2.0 (or your latest version)
 
-From source:
+From source (for development):
 ```bash
 git clone https://github.com/FF-GardenFn/principiadynamica.git
 cd principiadynamica
-pip install -e .  # This will install as constitutional-dynamics
+pip install -e .                                # Core package
+pip install -e ".[dev]"                         # For development (includes test tools)
+pip install -e ".[graph,quantum,circuit_tracer]" # For all integration features
 ```
 
-For developers:
-```bash
-git clone https://github.com/FF-GardenFn/principiadynamica.git
-cd principiadynamica
-pip install -e ".[dev]"  # Installs as constitutional-dynamics with development dependencies
-```
+### Basic Usage Examples
 
-### Usage Examples
+1. **Offline Log Analysis**:
+   ```bash
+   python -m constitutional_dynamics \
+     --embeddings path/to/embeddings.json \
+     --aligned path/to/aligned_examples.json \
+     --output report.json \
+     --spectral --steps 5
+   ```
 
-```bash
-# 1. offline log analysis
-python -m constitutional_dynamics \
-  --embeddings runs/LLM_chat_embeddings.json \
-  --aligned docs/aligned_examples.json \
-  --spectral --steps 6
+2. **Live System Monitoring** (Example):
+   ```bash
+   python -m constitutional_dynamics --live --interval 1.0
+   ```
 
-# 2. live feed (every 1 s)
-python -m constitutional_dynamics --live --graph bolt://neo4j:password@localhost:7687
-```
+(Refer to the full documentation for more examples and API usage.)
 
-Hit Ctrl-C to see a Rich sparkline of alignment vs time plus the PSD deviation table.
+### 📚 Full Documentation
 
----
+Detailed information, including tutorials, the mathematical framework of STC, and complete API references:
 
-## 📚 Full Documentation
+* [Main Documentation Hub](docs/index.md) (Browse on GitHub)
+* [Usage Guide](docs/usage.md) (constitutional_dynamics application)
+* [State Transition Calculus (STC)](docs/stc.md) - Mathematical Framework
+* [Circuit Tracer Bridge](constitutional_dynamics/integrations/circuit_tracer_bridge/docs/integration_architecture.md) - Integration Architecture (Details the "Alignment Thermostat")
+* [API Reference](docs/api/index.md) (links to docs/api/)
 
-For more detailed information, including a full usage guide, the mathematical framework of State Transition Calculus, and complete API references, please see:
+### 🔮 Roadmap Highlights
 
-* **[Main Documentation Index](docs/index.md)** (Browse on GitHub)
-    * [Usage Guide](docs/usage.md)
-    * [Mathematical Framework (STC)](docs/mathematical_framework.md)
-    * API Reference:
-        * [Core (`constitutional_dynamics.core`)](docs/api/core.md)
-        * [IO (`constitutional_dynamics.io`)](docs/api/io.md)
-        * [Integrations (`constitutional_dynamics.integrations`)](docs/api/integrations.md)
-        * [Visualization (`constitutional_dynamics.vis`)](docs/api/vis.md)
+| Milestone | Status | Target |
+|-----------|--------|--------|
+| constitutional-dynamics v0.2.0 Release | ✅ | June 2025 |
+| ↳ STC v0.1 Primitives (Activation, Residuals) | ✨ | Included |
+| ↳ Dynamic Alignment & Stability Metrics | ✨ | Included |
+| ↳ Circuit Tracer Bridge (Prototype & Architecture) | 🏗️ | Included |
+| ↳ MetaStrategist (Conceptual Integration) | 💭 | Included |
+| STC v0.2: Lyapunov-Modulated Activation | 💭 | Q3-Q4 2025 |
+| Circuit Tracer Bridge: Functional Implementation | 🏗️ | Q3 2025 |
+| LLM MetaStrategist: Full Integration & Testing | 🏗️ | Q4 2025 |
+| Advanced QUBO Solvers & Classical Alternatives | ⏳ | Ongoing |
+| Comprehensive Visualization Dashboard (GraphQL API) | 💡 | v0.3+ |
 
----
+**Status Legend:** 💡 Idea, 💭 Planning, 🏗️ Under Construction/Prototyping, ✨ Implemented/Included, 🧪 Testing, ✅ Released, ⏳ Ongoing/Backlog
 
-## 🔮 Roadmap
+*Note: This is an indicative roadmap for a research project and subject to change.*
 
-| Milestone | Status | ETA |
-|-----------|--------|-----|
-| 🎛 Configurable λ(t) schedules (cosine, linear...) | 🔜 | v0.2 |
-| 🌐 Neo4j -> GraphQL API for dashboards | ⏳ | v0.3 |
-| ⚛️ D-Wave hybrid solver integration | ⏳ | v0.3 |
-| 🤖 LLM strategist loop ("Suggest a timing modulation...") | ⏳ | v0.4 |
+### Contributing
 
----
+PrincipiaDynamica is an open research project. Contributions, feedback, and collaborations are welcome, especially in areas of STC development, alignment metrics, mechanistic interpretability integrations, and novel optimization strategies. Please see CONTRIBUTING.md (to be created) or open an issue to discuss.
 
-## 📜 License & Attribution
+### 📜 License & Attribution
 
-Prototype code © 2025 FF-GardenFn.
-Released under the Apache License 2.0 for non-commercial research & interview demo purposes.
+* Code for constitutional-dynamics is licensed under the Apache License 2.0.
+* The theoretical work on State Transition Calculus and PrincipiaDynamica is shared under a spirit of open research.
 
-> "In theory there is no difference between theory and practice.
-> In practice, there is." — Yogi Berra
+This project gratefully acknowledges and builds upon inspiring work from the AI safety and interpretability community, including research by Anthropic (e.g., Constitutional AI, Circuit Tracer). Specific citations are provided in relevant documentation.
+
+> "In theory there is no difference between theory and practice.  
+> In practice, there is."  
+> — Yogi Berra

@@ -1,58 +1,66 @@
 # PrincipiaDynamica Documentation
 
-Welcome to the documentation for the **PrincipiaDynamica** project. This project focuses on State Transition Calculus (STC) and its applications.
+Welcome to the documentation for the **PrincipiaDynamica** project. This project is dedicated to the research and development of **State Transition Calculus (STC)**, a novel mathematical framework for modeling dynamic, evolving systems, with a primary focus on applications in AI alignment and safety.
 
-Currently, the primary documented application is **`constitutional-dynamics`**, a framework for analyzing and monitoring AI model alignment as a trajectory through embedding space rather than a static property.c property.
+The flagship application of this research is **`constitutional-dynamics`**, a Python package designed to analyze and monitor AI model alignment as a trajectory through embedding space rather than a static property.
 
 ## Repository
 
-The source code for Constitutional Dynamics is available on GitHub: [https://github.com/FF-GardenFn/principiadynamica](https://github.com/FF-GardenFn/principiadynamica)
+The source code for the **PrincipiaDynamica project**, including the `constitutional-dynamics` application and experimental integrations, is available on GitHub:
+[https://github.com/FF-GardenFn/principiadynamica](https://github.com/FF-GardenFn/principiadynamica)
 
-## Overview
+## Project Overview
 
-Constitutional Dynamics treats alignment as a **trajectory** your model walks through embedding-space:
+**PrincipiaDynamica** aims to:
+* Develop the theoretical foundations of State Transition Calculus (STC).
+* Build practical tools, like `constitutional-dynamics`, that apply STC to real-world AI alignment challenges.
+* Explore integrations with mechanistic interpretability and other advanced AI safety techniques.
 
-* **Time domain** – how successive responses drift toward / away from desired values.  
-* **Frequency domain** – whether telemetry or exfil channels reveal periodic "spikes" defenders can spot.  
-* **State-Transition Calculus (STC)** – a lightweight formalism that captures latent *potentialities* (good **and** bad) and how they re-activate under specific context.
-
-The result is a self-contained Python package you can drop on any JSON embedding dump or live psutil feed, and instantly obtain:
-
-* ϕ-alignment scores, robust to noise & perturbations  
-* Δ-transition vectors with direction-to-aligned-region heuristics  
-* PSD (spectral) deviation for stealth / anomaly studies  
-* A dual-objective cost `C(t)` ready to feed into quantum / classical optimizers
+**`constitutional-dynamics`** (the application) treats AI alignment as a **trajectory**:
+* **Time domain analysis:** Tracks how successive responses drift toward or away from desired values.
+* **Frequency domain analysis:** Uses Power Spectral Density (PSD) to detect anomalous periodic patterns in behavior.
+* **STC Foundation:** Leverages STC to model latent behavioral potentialities and their activation.
+* **Key Outputs:** Provides ϕ-alignment scores, Δ-transition vectors, PSD deviation metrics, and supports a dual-objective cost function $C(t)$ for optimization.
 
 ## Documentation Contents
 
-### Getting Started
-- [Usage Guide](usage.md) - Basic usage guide
-- [Mathematical Framework](mathematical_framework.md) - Detailed explanation of the State-Transition Calculus
+This documentation is structured to guide you through the theory, application, and advanced concepts of PrincipiaDynamica.
 
-### API Reference
-- [Core (`constitutional_dynamics.core`)](api/core.md) - Core functionality (AlignmentVectorSpace, transition analysis, metrics)
-- [IO (`constitutional_dynamics.io`)](api/io.md) - Input/output operations (loading embeddings, time series detection, live metrics)
-- [Integrations (`constitutional_dynamics.integrations`)](api/integrations.md) - External integrations (Neo4j, D-Wave, LLM strategist)
-- [Visualization (`constitutional_dynamics.vis`)](api/vis.md) - Visualization tools
+### I. Understanding the Theory
+* **[State Transition Calculus (STC) - Mathematical Framework](mathematical_framework.md)**: The complete theoretical exposition of STC, its postulates, and core mathematical constructs.
 
-## Mathematical Backbone (as applied in `constitutional-dynamics`)
+### II. Using the `constitutional-dynamics` Application
+* **[Installation & Quick Start](../README.md#-quick-start)**: Refer to the main project README for installation and basic CLI examples.
+* **[Comprehensive Usage Guide](usage.md)**: Detailed instructions for CLI usage, Python API interaction, and potential workflows.
+* **API Reference:**
+    * [Core (`constitutional_dynamics.core`)](api/core.md)
+    * [IO (`constitutional_dynamics.io`)](api/io.md)
+    * [Visualisation (`constitutional_dynamics.vis`)](api/vis.md)
+    * [Integrations (`constitutional_dynamics.integrations` - including Graph, Quantum, Strategist)](api/integrations.md)
 
-### 1. Alignment region *(time domain)*
-*Vector-space hypersphere or convex-hull defined by known "good-behaviour" embeddings.*
+### III. Advanced Integrations & Research Prototypes
+* **[Circuit Tracer Bridge - Conceptual Overview & API](../constitutional_dynamics/integrations/circuit_tracer_bridge/README.md)**: Introduction to the experimental integration with mechanistic interpretability tools.
+* **[Circuit Tracer Bridge - Detailed Architecture](../constitutional_dynamics/integrations/circuit_tracer_bridge/docs/integration_architecture.md)**: In-depth technical design of the "Alignment Thermostat" concept.
 
-* **ϕ(state)** — cosine similarity to aligned centroid/boundary (with exponential memory decay τ).
+## Key STC Concepts Applied in `constitutional-dynamics`
 
-### 2. State-Transition Calculus (STC) Integration
-| STC symbol | Application in `constitutional-dynamics` |
-|------------|--------------------------------------------|
-| `a_i` (value subset) | cluster centres / prototype vectors |
-| `φ(a_i,t, …)` | `constitutional_dynamics.core.metrics.activation()` (`ϕ · e^{-Δt/τ}`) | | Residual potentiality `b(a_res)` | robustness perturbation samples |
-| `λ(t)` exploration/exploitation knob | CLI flag → cost weight |
+This section highlights how core STC principles are implemented or represented within the `constitutional-dynamics` package. For the full theory, please see the [Mathematical Framework](mathematical_framework.md).
 
-### 3. Dual-objective cost
+* **Alignment Region & ϕ-score:** Model states are represented as vectors. An "aligned region" is defined (e.g., via exemplar embeddings). The **ϕ-alignment score** measures a state's cosine similarity to this region, often with exponential memory decay ($\tau$) for robustness.
+* **STC Symbols & `constitutional-dynamics` Mapping:**
 
-$$
-C(t)=\bigl[1-\bar{\phi}(t)\bigr]\;+\;\lambda(t)\,\text{PSD\_distance}(S_x,S_{\text{aligned}})
-$$
+    | STC Symbol                 | Application in `constitutional-dynamics`                                       |
+    | :------------------------- | :----------------------------------------------------------------------------- |
+    | `a_i` (value subset)       | Cluster centres / prototype vectors representing distinct behavioral states.     |
+    | `φ(a_i,t, …)` (activation) | Implemented via `compute_activation()` (time-decayed influence) and `compute_activation_probability()` (more general STC placeholder for W', M, E factors) in `core.transition`. The planned "Alignment Thermostat" will make this adaptive using Lyapunov estimates. |
+    | `b(a_res)` (residual potentiality) | Explored via `compute_residual_potentiality()` which applies perturbations to reveal latent behavioral shifts. |
+    | `λ(t)` (exploration/control) | Represented by the `lambda_weight` in the cost function (CLI flag), balancing alignment fidelity against spectral anomaly. Future versions will explore dynamic $\lambda(t)$ schedules. |
 
-*Minimized by `constitutional_dynamics.core.optimise` with a graph-enhanced QUBO (quantum or classical).*
+* **Dual-Objective Cost Function:**
+    $$
+    C(t)=\bigl[1-\bar{\phi}(t)\bigr]\;+\;\lambda(t)\,\text{PSD\_distance}(S_x,S_{\text{aligned}})
+    $$
+    This cost is minimized by the QUBO-based optimizer in `core.optimise` to find desirable alignment trajectories.
+
+---
+*This documentation is actively being developed alongside the PrincipiaDynamica research project.*

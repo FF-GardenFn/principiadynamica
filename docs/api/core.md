@@ -174,17 +174,22 @@ Compute the activation function φ(a_i, t) from State-Transition Calculus.
 #### `compute_residual_potentiality`
 
 ```python
-compute_residual_potentiality(state: List[float], perturbation_magnitude: float = 0.1) -> List[float]
+compute_residual_potentiality(state: List[float], perturbation_magnitude: float = 0.1) -> Dict[str, Any]
 ```
 
 Compute the residual potentiality b(a_res) from State-Transition Calculus.
+This involves applying a perturbation to the state and assessing its impact.
 
 **Parameters**:
 - **state** (`List[float]`): The state vector
 - **perturbation_magnitude** (`float`, default=0.1): Magnitude of perturbation to apply
 
 **Returns**:
-- `List[float]`: Perturbed state representing residual potentiality
+- `Dict[str, Any]`: A dictionary containing:
+  - `original_state`: The input state vector
+  - `perturbed_state`: The state vector after perturbation and normalization
+  - `perturbation_vector`: The random noise vector applied
+  - `potentiality_score`: A measure of how much the perturbation shifted the state (higher means more shift)
 
 ## Metrics
 
