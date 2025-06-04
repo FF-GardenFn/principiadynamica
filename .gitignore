@@ -130,3 +130,6 @@ constitutional_dynamics.log
 
 # Ignore the entire notebook workspace
 notebook/
+
+# Ignore forked pacakges
+circuit-tracer-main/

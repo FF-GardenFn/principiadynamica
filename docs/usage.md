@@ -1,6 +1,6 @@
 # Usage Guide
 
-This guide provides an overview of how to use Constitutional Dynamics for alignment analysis and monitoring.
+Constitutional Dynamics, an application from the PrincipiaDynamica project, offers tools to analyze and monitor AI alignment as a dynamic process rather than a static property. This guide provides an overview of how to use Constitutional Dynamics for alignment analysis and monitoring.
 
 ## Command-Line Interface
 
@@ -50,6 +50,16 @@ This will:
 4. Display a live visualization of alignment trajectory
 
 Press Ctrl+C to stop monitoring and see the final analysis.
+
+### Configuration
+
+Constitutional Dynamics uses configuration files to control its behavior. The default configuration is stored in `cfg/defaults.yaml`. You can override these settings with your own configuration file:
+
+```bash
+python -m constitutional_dynamics --config path/to/custom_config.yaml --log-config path/to/logging_config.yaml
+```
+
+This allows you to customize parameters like thresholds, decay rates, and other settings without modifying the code.
 
 ### Advanced Options
 
@@ -190,6 +200,76 @@ graph_manager.add_transition("state_1", "state_2", {"alignment_change": -0.1})
 aligned_states = graph_manager.get_aligned_states(threshold=0.7)
 ```
 
+### Advanced: Circuit Tracer Bridge for Mechanistic Interventions (Experimental)
+
+The Circuit Tracer Bridge allows integrating behavioral monitoring with mechanistic interpretability insights. This is an experimental feature.
+
+```python
+from constitutional_dynamics import AlignmentVectorSpace, AlignmentThermostat
+# Assuming you have your model, and mock or real circuit tracer components:
+# from constitutional_dynamics.integrations.circuit_tracer_bridge.examples.common_mocks import MockCircuitTracer, MockModelInterface
+
+# 1. Initialize Constitutional Dynamics monitor
+cd_monitor = AlignmentVectorSpace(dimension=768) 
+# ... define aligned region for cd_monitor ...
+
+# 2. Initialize (mock or real) Circuit Tracer and Model Interface
+# circuit_tracer_instance = RealCircuitTracer() # From Anthropic's library
+# model_interface_instance = YourModelWrapper()
+
+# Using placeholder/mock names for this example:
+# For actual use, these would be real or more sophisticated mock objects.
+# See circuit_tracer_bridge/examples/ for runnable demos with detailed mocks.
+class Placeholder: pass
+circuit_tracer_instance = Placeholder() # Replace with actual or better mock
+model_interface_instance = Placeholder() # Replace with actual or better mock
+
+# 3. Create the AlignmentThermostat
+thermostat = AlignmentThermostat(
+    cd_monitor_instance=cd_monitor,
+    circuit_tracer_instance=circuit_tracer_instance,
+    model_interface=model_interface_instance,
+    threshold=0.7,  # Alignment score threshold
+    auto_stabilize=True
+)
+
+# 4. Simulate a model output and run the feedback loop
+# current_embedding = get_model_output_embedding_as_list()
+# original_prompt = "The prompt that generated this output"
+#
+# result = thermostat.run_feedback_loop(
+#     current_model_output_embedding=current_embedding,
+#     original_prompt_for_trace=original_prompt
+# )
+#
+# if result.get("intervention_applied"):
+#     print(f"Intervention Result: Improved={result.get('improved')}, New Score={result.get('new_score')}")
+#     if result.get("stability_improved"):
+#         print(f"System stability also improved. New Lyapunov est: {result.get('lyapunov_after')}")
+# else:
+#     print(f"No intervention applied. Reason: {result.get('reason')}")
+```
+
+Note: This example is kept high-level. Point users to your circuit_tracer_bridge/examples/ directory and the bridge's own README.md for more detailed, runnable examples with the necessary mock setups.
+
+### Programmatic Configuration Access
+
+```python
+import constitutional_dynamics
+
+# Load the default application configuration
+default_config = constitutional_dynamics.get_default_config()
+print("Default memory decay rate:", default_config.get("memory", {}).get("decay_rate"))
+
+# Load a custom config file (merging with defaults)
+# my_config = constitutional_dynamics.load_config("path/to/my_custom_config.yaml")
+
+# Configure logging programmatically (uses bundled logging.yaml by default)
+# constitutional_dynamics.configure_logging() 
+# Or with a custom logging config:
+# constitutional_dynamics.load_logging_config("path/to/my_logging_config.yaml")
+```
+
 ## Potential Workflows
 
 ### Analyzing Model Behavior Over Time
@@ -213,7 +293,16 @@ aligned_states = graph_manager.get_aligned_states(threshold=0.7)
 3. Apply quantum optimization for complex alignment landscapes
 4. Analyze the resulting paths to understand alignment dynamics
 
+### Dynamic Intervention and Oversight
+
+1. Set up live or batch monitoring with Constitutional Dynamics
+2. Define alignment thresholds and stability parameters for the AlignmentThermostat
+3. When issues are detected, leverage the Circuit Tracer Bridge to perform (simulated or real) mechanistic analysis
+4. Apply mechanistically-informed interventions (e.g., feature suppression) via the AlignmentThermostat
+5. Continuously verify intervention effectiveness and adapt strategies using the MetaStrategist feedback loop
+
 ## Next Steps
 
 - Explore the [API Reference](api/core.md) for detailed documentation of all functions and classes
+- Learn about the [Circuit Tracer Bridge](api/integrations.md#circuit-tracer-bridge) for mechanistic interpretability integration
 - Check out the [Mathematical Backbone](index.md#mathematical-backbone) to understand the theory behind Constitutional Dynamics

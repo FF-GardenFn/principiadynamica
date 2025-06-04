@@ -13,7 +13,7 @@ with open(os.path.join(os.path.dirname(__file__), "constitutional_dynamics", "__
             version = line.split("=")[1].strip().strip('"').strip("'")
             break
     else:
-        version = "0.1.0"
+        version = "0.2.0"
 with open(os.path.join(os.path.dirname(__file__), "README.md"), "r") as f:
     long_description = f.read()
 
@@ -40,6 +40,7 @@ setup(
     extras_require={
         "graph": ["neo4j"],
         "quantum": ["dwave-ocean-sdk"],
+        "circuit_tracer": ["circuit_tracer", "torch"],
         "dev": ["pytest", "black", "ruff"],
     },
     entry_points={
