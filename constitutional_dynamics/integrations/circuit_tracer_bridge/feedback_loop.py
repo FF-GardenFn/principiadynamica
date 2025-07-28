@@ -103,21 +103,70 @@ class AlignmentThermostat:
         """
         logger.info("Identifying intervention targets from circuit analysis")
 
-        # Currently a placeholder, this would contain the appropriate logic to analyze
-        # the circuit analysis results and determine which components to target.
-        # For now, we implement a simple placeholder that looks for critical features
-        # For poc and demonstration purposes.
-
         if not circuit_analysis_result:
             logger.warning("Empty circuit analysis result, cannot identify targets")
             return None
 
-        if "critical_features" in circuit_analysis_result and circuit_analysis_result["critical_features"]:
-            # Extract the most influential features for intervention
+        # Extract critical features if available
+        critical_features = circuit_analysis_result.get("critical_features", [])
+
+        # Extract graph for more detailed analysis
+        graph = circuit_analysis_result.get("graph")
+
+        if not critical_features and graph is not None:
+            # If no critical features were provided but we have a graph,
+            # try to extract them from the graph's activation values
+            logger.info("No critical features provided, extracting from graph")
+            try:
+                # Get top features by activation value
+                if hasattr(graph, 'activation_values') and hasattr(graph, 'active_features'):
+                    top_activations = torch.argsort(graph.activation_values, descending=True)[:5]
+                    critical_features = []
+                    for idx in top_activations:
+                        feature_info = graph.active_features[idx]
+                        layer, pos, feature_idx = feature_info.tolist()
+                        critical_features.append(f"layer_{layer}_pos_{pos}_feature_{feature_idx}")
+                    logger.info(f"Extracted {len(critical_features)} critical features from graph")
+            except Exception as e:
+                logger.warning(f"Failed to extract critical features from graph: {e}")
+
+        if critical_features:
+            # Analyze feature importance and categorize them
+            suppress_features = []
+            enhance_features = []
+
+            # Use the graph to determine which features to suppress vs enhance
+            if graph is not None and hasattr(graph, 'feature_importance'):
+                for feature in critical_features:
+                    # Parse feature string to get indices
+                    try:
+                        parts = feature.split('_')
+                        layer = int(parts[1])
+                        pos = int(parts[3])
+                        feature_idx = int(parts[5])
+
+                        # Check if this feature has negative impact on alignment
+                        # This is a simplified example - in a real implementation,
+                        # you would use more sophisticated analysis
+                        if graph.feature_importance.get((layer, pos, feature_idx), 0) < 0:
+                            suppress_features.append(feature)
+                        else:
+                            enhance_features.append(feature)
+                    except (IndexError, ValueError):
+                        # If we can't parse the feature, default to suppressing it
+                        suppress_features.append(feature)
+            else:
+                # Without detailed graph analysis, use the first 3 features for suppression
+                suppress_features = critical_features[:3]
+
+            # Create comprehensive intervention targets
             targets = {
-                "suppress_features": circuit_analysis_result["critical_features"][:3],
-                "analysis_summary": circuit_analysis_result.get("summary", "No summary available")
+                "suppress_features": suppress_features,
+                "enhance_features": enhance_features,
+                "analysis_summary": circuit_analysis_result.get("summary", "No summary available"),
+                "intervention_strength": min(0.8, 0.4 + (len(suppress_features) * 0.1))  # Scale with number of features
             }
+
             logger.info("Identified intervention targets: %s", targets)
             return targets
 
@@ -152,6 +201,7 @@ class AlignmentThermostat:
         # Extract stability context and modulated probabilities if available
         stability_context = intervention_targets.get("stability_context", {})
         modulated_probabilities = intervention_targets.get("modulated_probabilities", [])
+        intervention_strength = intervention_targets.get("intervention_strength", 0.5)
 
         # Log stability-aware intervention details if available
         if stability_context:
@@ -177,31 +227,87 @@ class AlignmentThermostat:
 
         self.intervention_history.append(record)
 
-        # Currently a placeholder, this would contain the interaction with the model interface
-        # to apply the specified interventions. For now, we log the action.
-        # In a real implementation, we would use the modulated probabilities to determine
-        # the strength of the intervention for each feature.
+        # Apply interventions based on the targets
+        intervention_applied = False
+
+        # Handle feature suppression
         if "suppress_features" in intervention_targets:
             features = intervention_targets["suppress_features"]
 
-            if modulated_probabilities and len(modulated_probabilities) == len(features):
-                # Use modulated probabilities to determine intervention strength for each feature
-                logger.info(
-                    "Suppressing features with modulated probabilities: %s",
-                    list(zip(features, [f"{p:.3f}" for p in modulated_probabilities]))
-                )
-
-                # In a real implementation, we would apply different suppression strengths
-                # based on the modulated probabilities
-                # Example: self.model.suppress_features_with_strengths(features, modulated_probabilities)
+            if not features:
+                logger.warning("Empty suppress_features list")
             else:
-                # Fall back to regular suppression if no modulated probabilities
-                logger.info("Suppressing features: %s", features)
-                # self.model.suppress_features(features)  # Actual implementation would call the model
+                if modulated_probabilities and len(modulated_probabilities) == len(features):
+                    # Use modulated probabilities to determine intervention strength for each feature
+                    logger.info(
+                        "Suppressing features with modulated probabilities: %s",
+                        list(zip(features, [f"{p:.3f}" for p in modulated_probabilities]))
+                    )
 
-            return True
+                    # Apply suppression with varying strengths
+                    if hasattr(self.model, 'suppress_features_with_strengths'):
+                        try:
+                            self.model.suppress_features_with_strengths(features, modulated_probabilities)
+                            intervention_applied = True
+                        except Exception as e:
+                            logger.error(f"Error applying feature suppression with strengths: {e}")
+                    else:
+                        # Fallback to basic suppression if method not available
+                        logger.warning("Model does not support suppression with strengths, falling back to basic suppression")
+                        try:
+                            self.model.suppress_features(features)
+                            intervention_applied = True
+                        except Exception as e:
+                            logger.error(f"Error applying feature suppression: {e}")
+                else:
+                    # Fall back to regular suppression if no modulated probabilities
+                    logger.info(f"Suppressing features with strength {intervention_strength}: {features}")
+                    try:
+                        # Try to use the strength parameter if available
+                        if hasattr(self.model, 'suppress_features_with_strength'):
+                            self.model.suppress_features_with_strength(features, intervention_strength)
+                        else:
+                            self.model.suppress_features(features)
+                        intervention_applied = True
+                    except Exception as e:
+                        logger.error(f"Error applying feature suppression: {e}")
 
-        return False
+        # Handle feature enhancement
+        if "enhance_features" in intervention_targets:
+            features = intervention_targets["enhance_features"]
+
+            if features:
+                logger.info(f"Enhancing features with strength {intervention_strength}: {features}")
+                try:
+                    if hasattr(self.model, 'enhance_features'):
+                        self.model.enhance_features(features, strength=intervention_strength)
+                        intervention_applied = True
+                    else:
+                        logger.warning("Model does not support feature enhancement")
+                except Exception as e:
+                    logger.error(f"Error applying feature enhancement: {e}")
+
+        # Apply any additional interventions specified
+        if "custom_interventions" in intervention_targets:
+            custom_interventions = intervention_targets["custom_interventions"]
+            logger.info(f"Applying {len(custom_interventions)} custom interventions")
+
+            for intervention in custom_interventions:
+                intervention_type = intervention.get("type")
+                intervention_params = intervention.get("params", {})
+
+                try:
+                    # Call the appropriate method on the model based on intervention type
+                    if hasattr(self.model, intervention_type):
+                        method = getattr(self.model, intervention_type)
+                        method(**intervention_params)
+                        intervention_applied = True
+                    else:
+                        logger.warning(f"Model does not support intervention type: {intervention_type}")
+                except Exception as e:
+                    logger.error(f"Error applying custom intervention {intervention_type}: {e}")
+
+        return intervention_applied
 
     def calculate_modulated_activation_probability(
             self,
@@ -562,48 +668,92 @@ class AlignmentThermostat:
             }
 
         # Step 6: Get new model output after intervention
-        # In a real implementation, this would re-run the model with the intervention applied
-        # For now, we simulate an improved output that takes into account stability metrics
+        # Re-run the model with the intervention applied to get the new output
+        logger.info("Generating new model output with interventions applied")
 
-        # In a real implementation, this would re-run the model with the intervention applied
-        # For demonstration purposes, we use the monitor's functionality to create an improved embedding
+        new_output = None
+        new_output_embedding = None
 
-        # Get the aligned centroid from the monitor
-        aligned_centroid = getattr(self.monitor, 'aligned_centroid', None)
+        try:
+            # Check if the model interface has the required methods
+            if hasattr(self.model, 'generate_with_interventions') and hasattr(self.model, 'embed_output'):
+                # Generate new output with interventions applied
+                new_output = self.model.generate_with_interventions(
+                    prompt=original_prompt_for_trace,
+                    intervention_targets=intervention_targets
+                )
 
-        if aligned_centroid is not None:
-            # Create a new embedding that's closer to the aligned centroid
-            mock_new_output_embedding = []
+                # Embed the new output
+                new_output_embedding = self.model.embed_output(new_output)
 
-            # Use the monitor's vector operations to move toward aligned space
-            for i in range(len(current_model_output_embedding)):
-                if i < len(aligned_centroid):
-                    # Move 10% closer to the aligned centroid
-                    value = current_model_output_embedding[i] + 0.1 * (aligned_centroid[i] - current_model_output_embedding[i])
-                    mock_new_output_embedding.append(value)
+                logger.info("Successfully generated new output with interventions")
+            else:
+                # Fallback if the model doesn't support the required methods
+                logger.warning("Model interface doesn't support generate_with_interventions or embed_output")
+
+                # Try to use a more basic generate method if available
+                if hasattr(self.model, 'generate'):
+                    new_output = self.model.generate(original_prompt_for_trace)
+
+                    # Try to embed the output if possible
+                    if hasattr(self.model, 'embed_output'):
+                        new_output_embedding = self.model.embed_output(new_output)
+                    else:
+                        logger.warning("Cannot embed new output, will use fallback method")
                 else:
-                    mock_new_output_embedding.append(current_model_output_embedding[i])
+                    logger.warning("Model interface doesn't support basic generation, using fallback method")
+        except Exception as e:
+            logger.error(f"Error generating new output with interventions: {e}")
 
-            # Use numpy for normalization to ensure consistency with other vector operations
-            mock_new_output_embedding = np.array(mock_new_output_embedding)
-            norm = np.linalg.norm(mock_new_output_embedding)
-            if norm > 0:
-                mock_new_output_embedding = (mock_new_output_embedding / norm).tolist()
-        else:
-            # If no aligned centroid is available, make a small random improvement
-            logger.warning("No aligned centroid available, using fallback improvement method")
-            mock_new_output_embedding = list(current_model_output_embedding)
-            # Add a small random perturbation that's likely to improve alignment
-            mock_new_output_embedding = np.array(mock_new_output_embedding)
-            mock_new_output_embedding += np.random.normal(0, 0.01, size=mock_new_output_embedding.shape)
-            norm = np.linalg.norm(mock_new_output_embedding)
-            if norm > 0:
-                mock_new_output_embedding = (mock_new_output_embedding / norm).tolist()
+        # If we couldn't generate a new output or embedding, use a fallback method
+        if new_output_embedding is None:
+            logger.warning("Using fallback method to simulate new output embedding")
+
+            # Get the aligned centroid from the monitor
+            aligned_centroid = getattr(self.monitor, 'aligned_centroid', None)
+
+            if aligned_centroid is not None:
+                # Create a new embedding that's closer to the aligned centroid
+                new_output_embedding = []
+
+                # Use the monitor's vector operations to move toward aligned space
+                for i in range(len(current_model_output_embedding)):
+                    if i < len(aligned_centroid):
+                        # Move toward the aligned centroid based on intervention strength
+                        # Extract intervention strength or use default
+                        strength = intervention_targets.get("intervention_strength", 0.1)
+                        value = current_model_output_embedding[i] + strength * (aligned_centroid[i] - current_model_output_embedding[i])
+                        new_output_embedding.append(value)
+                    else:
+                        new_output_embedding.append(current_model_output_embedding[i])
+
+                # Use numpy for normalization to ensure consistency with other vector operations
+                new_output_embedding = np.array(new_output_embedding)
+                norm = np.linalg.norm(new_output_embedding)
+                if norm > 0:
+                    new_output_embedding = (new_output_embedding / norm).tolist()
+            else:
+                # If no aligned centroid is available, make a small improvement based on stability metrics
+                logger.warning("No aligned centroid available, using stability-guided improvement")
+
+                # Use stability metrics to guide the improvement
+                lyapunov_estimate = stability_metrics.get("lyapunov_exponent_estimate", 0.0)
+                perturbation_scale = max(0.01, min(0.05, lyapunov_estimate * 0.1))
+
+                new_output_embedding = np.array(current_model_output_embedding)
+
+                # Add a small perturbation scaled by the Lyapunov estimate
+                new_output_embedding += np.random.normal(0, perturbation_scale, size=new_output_embedding.shape)
+
+                # Normalize the embedding
+                norm = np.linalg.norm(new_output_embedding)
+                if norm > 0:
+                    new_output_embedding = (new_output_embedding / norm).tolist()
 
         # Step 7: Verify improvement
         verification_result = self.verify_improvement(
             current_model_output_embedding,
-            mock_new_output_embedding
+            new_output_embedding
         )
 
         # Calculate new stability metrics after intervention

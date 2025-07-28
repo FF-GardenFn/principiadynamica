@@ -16,7 +16,9 @@ from .transition import (
 )
 from .metrics import (
     calculate_stability_metrics,
-    evaluate_alignment_robustness
+    evaluate_alignment_robustness,
+    calculate_cross_agent_divergence,
+    calculate_alignment_metrics
 )
 from .optimise import AlignmentOptimizer, GraphEnhancedAlignmentOptimizer
 
@@ -31,6 +33,8 @@ __all__ = [
     "compute_activation",
     "calculate_stability_metrics",
     "evaluate_alignment_robustness",
+    "calculate_cross_agent_divergence",
+    "calculate_alignment_metrics",
     "AlignmentOptimizer",
     "GraphEnhancedAlignmentOptimizer"
 ]

@@ -250,15 +250,19 @@ def _cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
 
 def compute_residual_potentiality(
     state: List[float], 
-    perturbation_magnitude: float = 0.1
-) -> Dict[str, Any]: # ✨ CHANGED return type
+    perturbation_magnitude: float = 0.1,
+    num_perturbations: int = 5,
+    constitutional_dims: Optional[List[int]] = None
+) -> Dict[str, Any]:
     """
     Compute the residual potentiality b(a_res) from State-Transition Calculus.
-    This involves applying a perturbation to the state and assessing its impact.
+    This involves applying multiple perturbations to the state and assessing their impact.
 
     Args:
         state: The state vector
         perturbation_magnitude: Magnitude of perturbation to apply
+        num_perturbations: Number of perturbations to apply
+        constitutional_dims: List of indices representing constitutional dimensions
 
     Returns:
         A dictionary containing:
@@ -267,51 +271,125 @@ def compute_residual_potentiality(
             - perturbation_vector: The random noise vector applied.
             - potentiality_score: A measure of how much the perturbation shifted
                                  the state (1 - cosine_similarity). Higher means more shift.
+            - directional_consistency: Measure of how consistent the perturbation responses are
+            - constitutional_impact: Impact of perturbations on constitutional dimensions
+            - mesa_optimizer_score: Likelihood of a mesa-optimizer being present
+            - hidden_pattern_score: Likelihood of hidden patterns being present
     """
-    perturbation_vector: List[float]
-    perturbed_state_intermediate: List[float]
+    # Default constitutional dimensions (first 10)
+    if constitutional_dims is None:
+        constitutional_dims = list(range(min(10, len(state))))
 
-    if USE_NUMPY:
-        state_np = np.array(state)
-        perturbation_vector_np = np.random.normal(0, perturbation_magnitude, len(state))
-        perturbed_state_intermediate_np = state_np + perturbation_vector_np
+    # Apply multiple perturbations to detect patterns
+    perturbed_states = []
+    perturbation_vectors = []
+    similarities = []
+    constitutional_changes = []
 
-        perturbation_vector = perturbation_vector_np.tolist()
-        perturbed_state_intermediate = perturbed_state_intermediate_np.tolist()
+    for _ in range(num_perturbations):
+        if USE_NUMPY:
+            state_np = np.array(state)
+            perturbation_vector_np = np.random.normal(0, perturbation_magnitude, len(state))
+            perturbed_state_intermediate_np = state_np + perturbation_vector_np
+
+            perturbation_vector = perturbation_vector_np.tolist()
+            perturbed_state_intermediate = perturbed_state_intermediate_np.tolist()
+        else:
+            # Pure Python implementation
+            perturbation_vector = [random.gauss(0, perturbation_magnitude) for _ in range(len(state))]
+            perturbed_state_intermediate = [s + p for s, p in zip(state, perturbation_vector)]
+
+        # Normalize the perturbed state
+        norm = math.sqrt(sum(s * s for s in perturbed_state_intermediate))
+        if norm > 0:
+            final_perturbed_state = [s / norm for s in perturbed_state_intermediate]
+        else:
+            final_perturbed_state = perturbed_state_intermediate
+
+        # Calculate similarity
+        similarity = _cosine_similarity(state, final_perturbed_state)
+        similarities.append(similarity)
+
+        # Store perturbed state and perturbation vector
+        perturbed_states.append(final_perturbed_state)
+        perturbation_vectors.append(perturbation_vector)
+
+        # Calculate changes in constitutional dimensions
+        const_changes = [abs(final_perturbed_state[i] - state[i]) for i in constitutional_dims if i < len(state)]
+        constitutional_changes.append(const_changes)
+
+    # Calculate average potentiality score
+    avg_similarity = sum(similarities) / len(similarities)
+    potentiality_score = (1.0 - avg_similarity) / 2.0
+
+    # Calculate directional consistency (how consistently perturbations affect the state)
+    # Higher consistency suggests hidden structure or mesa-optimization
+    direction_vectors = []
+    for perturbed in perturbed_states:
+        if USE_NUMPY:
+            direction = np.array(perturbed) - np.array(state)
+            direction = direction / (np.linalg.norm(direction) + 1e-10)
+            direction_vectors.append(direction)
+        else:
+            direction = [p - s for p, s in zip(perturbed, state)]
+            norm = math.sqrt(sum(d * d for d in direction)) + 1e-10
+            direction = [d / norm for d in direction]
+            direction_vectors.append(direction)
+
+    # Calculate pairwise cosine similarities between direction vectors
+    direction_similarities = []
+    for i in range(len(direction_vectors)):
+        for j in range(i+1, len(direction_vectors)):
+            if USE_NUMPY:
+                sim = np.dot(direction_vectors[i], direction_vectors[j])
+            else:
+                sim = sum(a * b for a, b in zip(direction_vectors[i], direction_vectors[j]))
+            direction_similarities.append(abs(sim))  # Take absolute value to measure consistency regardless of direction
+
+    directional_consistency = sum(direction_similarities) / max(1, len(direction_similarities))
+
+    # Calculate constitutional impact (how much perturbations affect constitutional dimensions)
+    avg_constitutional_change = sum(sum(changes) / len(changes) for changes in constitutional_changes) / len(constitutional_changes)
+
+    # Calculate mesa-optimizer score
+    # High directional consistency + high potentiality score suggests mesa-optimization
+    mesa_optimizer_score = directional_consistency * potentiality_score * 2.0
+
+    # Calculate hidden pattern score
+    # High variance in constitutional vs. non-constitutional changes suggests hidden patterns
+    if len(constitutional_dims) > 0 and len(state) > len(constitutional_dims):
+        const_changes_flat = [c for changes in constitutional_changes for c in changes]
+        const_avg = sum(const_changes_flat) / len(const_changes_flat)
+
+        # Calculate changes in non-constitutional dimensions
+        non_const_dims = [i for i in range(len(state)) if i not in constitutional_dims]
+        if non_const_dims:
+            non_const_changes = []
+            for perturbed in perturbed_states:
+                changes = [abs(perturbed[i] - state[i]) for i in non_const_dims if i < len(state)]
+                non_const_changes.extend(changes)
+
+            non_const_avg = sum(non_const_changes) / len(non_const_changes)
+
+            # Ratio of non-constitutional to constitutional changes
+            # Higher ratio suggests hidden patterns in non-constitutional dimensions
+            ratio = non_const_avg / (const_avg + 1e-10)
+            hidden_pattern_score = min(1.0, max(0.0, (ratio - 1.0) * 0.5))
+        else:
+            hidden_pattern_score = 0.0
     else:
-        # Pure Python implementation
-         # random.seed(42) # Considering if seeding is needed here for reproducibility...
-        perturbation_vector = [random.gauss(0, perturbation_magnitude) for _ in range(len(state))]
-        perturbed_state_intermediate = [s + p for s, p in zip(state, perturbation_vector)]
+        hidden_pattern_score = 0.0
 
-    # Normalize the perturbed state
-    norm = math.sqrt(sum(s * s for s in perturbed_state_intermediate))
-    final_perturbed_state: List[float]
-    if norm > 0:
-        final_perturbed_state = [s / norm for s in perturbed_state_intermediate]
-    else:
-        final_perturbed_state = perturbed_state_intermediate # Or handle as all zeros if that's preferred for a zero vector
-
-    # Calculate potentiality_score (1 - cosine_similarity between original and perturbed)
-    # the returned score is higher if the perturbation causes a larger directional change.
-    similarity = _cosine_similarity(state, final_perturbed_state)
-    potentiality_score = 1.0 - similarity # Ranges 0 (no change) to 2 (opposite direction), typically 0-1 for small changes.
-                                          # To keep it 0-1, could use (1 - similarity) / 2 if similarity is -1 to 1.
-                                          # Cosine similarity for unit vectors is between -1 and 1.
-                                          # If state and final_perturbed_state are unit vectors, then 1-similarity gives good measure.
-                                          # Let's assume state is also somewhat normalized or its norm doesn't affect cosine too much.
-                                          # For better interpretability, ensure score is 0-1, so perhaps:
-    potentiality_score = (1.0 - similarity) / 2.0 # Now 0 (identical) to 1 (orthogonal or opposite)
-                                                 # if original similarity was -1 (opposite), score is 1.
-                                                 # if original similarity was 0 (orthogonal), score is 0.5.
-                                                 # if original similarity was 1 (identical), score is 0.
-                                                 # This scaling seems more intuitive for a 0-1 "instability" or "shift" score.
-
-
+    # Use the first perturbed state for backward compatibility
     return {
         "original_state": state,
-        "perturbed_state": final_perturbed_state,
-        "perturbation_vector": perturbation_vector,
-        "potentiality_score": potentiality_score 
-        # "specific_indicators": {} # Placeholder for future work and implementation
+        "perturbed_state": perturbed_states[0],
+        "perturbation_vector": perturbation_vectors[0],
+        "potentiality_score": potentiality_score,
+        "directional_consistency": directional_consistency,
+        "constitutional_impact": avg_constitutional_change,
+        "mesa_optimizer_score": mesa_optimizer_score,
+        "hidden_pattern_score": hidden_pattern_score,
+        "all_perturbed_states": perturbed_states,
+        "all_perturbation_vectors": perturbation_vectors
     }

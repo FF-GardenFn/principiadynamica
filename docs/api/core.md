@@ -1,6 +1,6 @@
 # Core API Reference
 
-The `northstar.core` module provides the core functionality for alignment vector dynamics, including the `AlignmentVectorSpace` class, transition analysis, metrics calculation, and optimization.
+The `constitutional_dynamics.core` module provides the core functionality for alignment vector dynamics, including the `AlignmentVectorSpace` class, transition analysis, metrics calculation, and optimization.
 
 ## AlignmentVectorSpace
 
