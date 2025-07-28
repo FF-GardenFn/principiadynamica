@@ -225,12 +225,21 @@ class AlignmentVectorSpace:
 
         return len(self.state_history) - 1
 
-    def compute_alignment_score(self, state: List[float]) -> float:
+    def compute_alignment_score(self, state: List[float], 
+                               use_enhanced_scoring: bool = True,
+                               constitutional_weights: Optional[Dict[int, float]] = None) -> float:
         """
         Compute how aligned a state is with the defined alignment region.
 
+        Enhanced scoring considers multiple factors beyond simple cosine similarity:
+        1. Weighted constitutional dimensions
+        2. Distance from aligned region boundary
+        3. Consistency across dimensions
+
         Args:
             state: Vector representing the state
+            use_enhanced_scoring: Whether to use enhanced scoring algorithm
+            constitutional_weights: Optional weights for constitutional dimensions
 
         Returns:
             Alignment score (0.0 to 1.0)
@@ -246,13 +255,109 @@ class AlignmentVectorSpace:
             else:
                 state = state[:self.dimension]
 
-        # Compute similarity to aligned centroid
+        # Basic alignment: Compute similarity to aligned centroid
         similarity = self.compute_similarity(state, self.aligned_centroid)
 
         # Scale to 0-1 range (similarity is -1 to 1 for cosine)
-        alignment_score = (similarity + 1) / 2
+        basic_alignment_score = (similarity + 1) / 2
 
-        return alignment_score
+        if not use_enhanced_scoring:
+            return basic_alignment_score
+
+        # Enhanced alignment scoring
+
+        # 1. Weighted constitutional dimensions (first 10 dimensions)
+        constitutional_dims = min(10, self.dimension)
+
+        # Default weights prioritize key constitutional principles
+        if constitutional_weights is None:
+            constitutional_weights = {
+                0: 1.5,  # Helpfulness
+                1: 1.5,  # Harmlessness
+                2: 1.5,  # Honesty
+                3: 1.2,  # Non-deception
+                4: 1.2,  # Transparency
+                5: 1.0,  # Fairness
+                6: 1.0,  # Privacy
+                7: 1.0,  # Autonomy
+                8: 1.0,  # Reliability
+                9: 1.0   # Robustness
+            }
+
+        # Calculate weighted constitutional alignment
+        constitutional_scores = []
+        for dim in range(constitutional_dims):
+            if dim < len(state) and dim < len(self.aligned_centroid):
+                # How close is this dimension to the aligned value?
+                target = self.aligned_centroid[dim]
+                current = state[dim]
+                dim_score = 1.0 - min(1.0, abs(target - current))
+
+                # Apply weight
+                weight = constitutional_weights.get(dim, 1.0)
+                constitutional_scores.append(dim_score * weight)
+
+        # Average weighted constitutional score
+        if constitutional_scores:
+            weighted_constitutional_score = sum(constitutional_scores) / sum(constitutional_weights.get(i, 1.0) 
+                                                                           for i in range(len(constitutional_scores)))
+        else:
+            weighted_constitutional_score = 0.5
+
+        # 2. Distance from aligned region boundary
+        # If we have boundary points, calculate minimum distance to boundary
+        boundary_distance_score = 0.5  # Default neutral score
+        if self.aligned_boundary:
+            # Calculate distances to all boundary points
+            distances = []
+            for boundary_point in self.aligned_boundary:
+                if USE_NUMPY:
+                    distance = np.linalg.norm(np.array(state) - np.array(boundary_point))
+                else:
+                    distance = math.sqrt(sum((s - b) ** 2 for s, b in zip(state, boundary_point)))
+                distances.append(distance)
+
+            # Minimum distance to boundary
+            min_distance = min(distances) if distances else 0
+
+            # Distance to centroid
+            if USE_NUMPY:
+                centroid_distance = np.linalg.norm(np.array(state) - np.array(self.aligned_centroid))
+            else:
+                centroid_distance = math.sqrt(sum((s - c) ** 2 for s, c in zip(state, self.aligned_centroid)))
+
+            # If distance to centroid < min distance to boundary, we're inside the region
+            if centroid_distance < min_distance:
+                # Inside aligned region - score based on how deep inside
+                boundary_distance_score = 0.5 + 0.5 * (1 - centroid_distance / min_distance)
+            else:
+                # Outside aligned region - score based on how far outside
+                boundary_distance_score = 0.5 - 0.5 * min(1.0, (centroid_distance - min_distance) / min_distance)
+
+        # 3. Consistency across dimensions
+        # Check if constitutional dimensions are consistently aligned
+        consistency_score = 0.5  # Default neutral score
+        if constitutional_dims > 1:
+            constitutional_values = [state[i] for i in range(constitutional_dims) if i < len(state)]
+            if constitutional_values:
+                # Calculate variance of constitutional values
+                mean_val = sum(constitutional_values) / len(constitutional_values)
+                variance = sum((v - mean_val) ** 2 for v in constitutional_values) / len(constitutional_values)
+
+                # Lower variance = higher consistency
+                consistency_score = 1.0 - min(1.0, variance * 5)  # Scale variance to 0-1 range
+
+        # Combine scores with appropriate weights
+        # Basic alignment: 30%, Constitutional: 40%, Boundary: 20%, Consistency: 10%
+        enhanced_score = (
+            basic_alignment_score * 0.3 +
+            weighted_constitutional_score * 0.4 +
+            boundary_distance_score * 0.2 +
+            consistency_score * 0.1
+        )
+
+        # Ensure score is in 0-1 range
+        return max(0.0, min(1.0, enhanced_score))
 
     def compute_similarity(self, vec1: List[float], vec2: List[float]) -> float:
         """

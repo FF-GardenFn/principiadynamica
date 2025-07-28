@@ -1,11 +1,11 @@
 """
-Constitutional Dynamics 0.2 - Vector-space alignment metrics & state-transition calculus
+Constitutional Dynamics 0.2.1 - Vector-space alignment metrics & state-transition calculus
 
 A framework for analyzing and monitoring alignment as a trajectory through
 embedding space rather than a static property.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 # Import from core module
 from .core.space import AlignmentVectorSpace
@@ -16,7 +16,12 @@ from .core.transition import (
     compute_residual_potentiality,
     compute_activation
 )
-from .core.metrics import calculate_stability_metrics, evaluate_alignment_robustness
+from .core.metrics import (
+    calculate_stability_metrics, 
+    evaluate_alignment_robustness,
+    calculate_cross_agent_divergence,
+    calculate_alignment_metrics
+)
 from .core.optimise import AlignmentOptimizer, GraphEnhancedAlignmentOptimizer
 
 # Import from io module
@@ -58,6 +63,8 @@ __all__ = [
     "compute_activation",
     "calculate_stability_metrics",
     "evaluate_alignment_robustness",
+    "calculate_cross_agent_divergence",
+    "calculate_alignment_metrics",
     "AlignmentOptimizer",
     "GraphEnhancedAlignmentOptimizer",
 

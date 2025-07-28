@@ -132,4 +132,9 @@ constitutional_dynamics.log
 notebook/
 
 # Ignore forked pacakges
-circuit-tracer-main/
+circuit-tracer/
+agentic-misalignment/
+
+# Ignore not ready directories
+anthropic/
+presentation/
